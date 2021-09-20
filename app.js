@@ -1,5 +1,7 @@
 $(document).ready(function () {
     let startTime = performance.now();
+    let feedBack = $('#feedback');
+    let sentenceContainer = $('#sentence');
     let sentences = ['ten ate neite ate nee enet ite ate inet ent eate', 'Too ato too nOt enot one totA not anot tOO aNot', 'oat itain oat tain nate eate tea anne inant nean', 'itant eate anot eat nato inate eat anot tain eat', 'nee ene ate ite tent tiet ent ine ene ete ene ate'];
     let keyPressed = false;
     let sentenceChars = [];
@@ -8,79 +10,28 @@ $(document).ready(function () {
     let numberOfWords = 0;
     let numberofErrors = 0;
     let key;
-    
+
     // sets upper case keyboard to be hidden when game starts
     $('#keyboard-upper-container').children('div').each(function () {
         $(this).toggle();
     })
     $(document).keydown(function (event) {
-        key = event.which;
-        $('#' + event.which).css('background', 'yellow');
-        if (event.which >= 65 && event.which <= 90) {
-            $('#' + (event.which + 32)).css('background', 'yellow');
-        }
-        // if shift is pressed toggles keyboard display on key down
-        if (keyPressed === false) {
-            keyPressed = true;
-            if (key == 16) {
-                $('#keyboard-upper-container').children('div').toggle();
-                $('#keyboard-lower-container').children('div').toggle();
-            }
-        }
-        // prevents wrong key presses from advancing the game. Increments counter on correct key press to continue game. Appends check mark if correct key pressed, cross mark if not.
-        if (event.key == $('#c' + counter)[0].innerText && counter < sentences[currentSentence].length) { // hard coded 48 to prevent type error at end of game
-            $('#c' + (counter + 1)).css('background', 'yellow');
-            $('#c' + counter).css('background', '');
-            counter++;
-            $('#target-letter').empty();
-            $('#target-letter').append($('#c' + counter)[0].innerText)
-            $('#feedback').append('<span> &#x2705 </span>');
-        }
-        else {
-            $('#feedback').append('<span> &#x274c </span>');
-            numberofErrors++
-        }
-        console.log(counter);
+        highlightText(event, 'lower');
+        toggleKeyboard(event, 'lower');
+        isCorrectKey(event);
     })
     $(document).keyup(function (event) {
-        key = event.which;
-        $('#' + event.which).css('background', '');
-        // if at end of string and not last sentence, changes sentence. 
-        if (counter == (sentences[currentSentence].length) && (currentSentence <= (sentences.length - 2))) {
-            currentSentence++;
-            numberOfWords++; // this is here to account for the last word of each sentence
-            counter = 0;
-            changeSentence();
-        }
-        // if at end of last sentence - empty fields, display result, and reset game. 
-        if (counter == (sentences[currentSentence].length) && currentSentence == (sentences.length - 1)) {
-            $('#feedback').empty();
-            $('#sentence').empty();
-            //numberOfWords++
-            displayResult();
-            setTimeout(_ => {
-                resetGame();
-            }, 2000)
-        }
-        // .which returns the same code for both upper and lower case letters. This adds 32 to ensure all lower case letters has highlight removed properly. No support for non-alpha numeric numbers are this time.
-        if (event.which >= 65 && event.which <= 90) {
-            $('#' + (event.which + 32)).css('background', '');
-        }
-        // if shift is pressed toggles keyboards on key release
-        if (key == 16) {
-            if (keyPressed === true) {
-                keyPressed = false;
-            }
-            $('#keyboard-upper-container').children('div').toggle();
-            $('#keyboard-lower-container').children('div').toggle();
-        }
+        checkSentenceEnd();
+        highlightText(event, 'upper');
+        toggleKeyboard(event, 'upper');
         keyPressed = false;
     })
+
     // Clears previous feedback/sentence and changes sentence when called. 
     function changeSentence() {
         sentenceChars = [];
-        $('#feedback').empty();
-        $('#sentence').empty();
+        feedBack.empty();
+        sentenceContainer.empty();
         // loops through provided sentence array and its indexes to push each string character into a new array. 
         for (let x = 0; x < sentences[currentSentence].length; x++) {
             sentenceChars.push(sentences[currentSentence][x]);
@@ -91,7 +42,7 @@ $(document).ready(function () {
         }
         // loops through current index of sentences and appends the characters one at a time
         for (let y = 0; y < sentences[currentSentence].length; y++) {
-            $('#sentence').append('<span id =c' + y + '>' + sentenceChars[y] + '</span>');
+            sentenceContainer.append('<span id =c' + y + '>' + sentenceChars[y] + '</span>');
         }
     }
     // Resets game when called
@@ -108,11 +59,94 @@ $(document).ready(function () {
     }
     // Calculates and displays score when called
     function displayResult() {
-        $('#feedback').empty();
+        feedBack.empty();
         let endTime = performance.now();
         let playTime = Math.round((endTime - startTime) / 1000);
         let wordsPerMinute = Math.round((numberOfWords / (playTime / 60)) - (2 * numberofErrors));
-        $('#feedback').append('<span> Score: ' + wordsPerMinute + '</span>');
+        feedBack.append('<span> Score: ' + wordsPerMinute + '</span>');
+    }
+
+    // Toggles between upper case and lower case keyboard when shift key is pressed
+    function toggleKeyboard(event, keyboard){
+        let upperCaseKeyboard = $('#keyboard-upper-container').children('div');
+        let lowerCaseKeyboard = $('#keyboard-lower-container').children('div');
+        key = event.which;
+        if (keyboard == 'lower'){
+            if (keyPressed === false) {
+                keyPressed = true;
+                if (key == 16) {
+                    upperCaseKeyboard.toggle();
+                    lowerCaseKeyboard.toggle();
+                }
+            }
+        }
+        if (keyboard == 'upper'){
+            if (key == 16) {
+                if (keyPressed === true) {
+                    keyPressed = false;
+                }
+                upperCaseKeyboard.toggle();
+                lowerCaseKeyboard.toggle();
+            }
+        }
+    }
+
+    // Highlights or removes highlight from keys as they are entered. Not all keys are supported at this time. 
+    function highlightText(event, keyboard){
+        let keyIsAlpha = event.which >= 65 && event.which <= 90;
+        let lowerCase = $('#' +(event.which +32));
+        let currentKey = $('#' + event.which);
+        key = event.which;
+        if (keyboard == 'lower'){
+            currentKey.css('background', 'yellow');
+            if (keyIsAlpha) {
+                lowerCase.css('background', 'yellow');
+            }
+        }
+        if (keyboard == 'upper'){
+            currentKey.css('background', '');
+            if (keyIsAlpha) {
+                lowerCase.css('background', '');
+            }
+        }
+    }
+
+    // Prevents wrong key presses from advancing the game. Increments counter on correct key press to continue game. Appends check mark if correct key pressed, cross mark if not.
+    function isCorrectKey(event){
+        let keyEntered = $('#c' + counter)[0].innerText
+        let previousKey = $('#c' + counter)
+        let nextKey = $('#c' + (counter + 1))
+        let nextLetter = $('#target-letter')
+
+        if (event.key == keyEntered && counter < sentences[currentSentence].length) {
+            nextKey.css('background', 'yellow');
+            previousKey.css('background', '');
+            counter++;
+            nextLetter.empty();
+            nextLetter.append($(keyEntered))
+            feedBack.append('<span> &#x2705 </span>');
+        }
+        else {
+            feedBack.append('<span> &#x274c </span>');
+            numberofErrors++
+        }
+    }
+
+    function checkSentenceEnd(){
+        if (counter == (sentences[currentSentence].length) && (currentSentence <= (sentences.length - 2))) {
+            currentSentence++;
+            numberOfWords++; // this is here to account for the last word of each sentence
+            counter = 0;
+            changeSentence();
+        }
+        if (counter == (sentences[currentSentence].length) && currentSentence == (sentences.length - 1)) {
+            feedBack.empty();
+            sentenceContainer.empty();
+            displayResult();
+            setTimeout(_ => {
+                resetGame();
+            }, 2000)
+        }
     }
     changeSentence();
 })
