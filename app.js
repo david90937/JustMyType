@@ -117,13 +117,16 @@ $(document).ready(function () {
         let previousKey = $('#c' + counter)
         let nextKey = $('#c' + (counter + 1))
         let nextLetter = $('#target-letter')
-
+        // ignores shift key when pressed
+        if (event.which == 16){
+            return;
+        }
         if (event.key == keyEntered && counter < sentences[currentSentence].length) {
             nextKey.css('background', 'yellow');
             previousKey.css('background', '');
             counter++;
             nextLetter.empty();
-            nextLetter.append($(keyEntered))
+            nextLetter.append(nextKey[0].innerText);
             feedBack.append('<span> &#x2705 </span>');
         }
         else {
